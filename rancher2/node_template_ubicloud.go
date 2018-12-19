@@ -60,7 +60,7 @@ type UbiCloudConfig struct {
 	NetName              string `json:"netName,omitempty" yaml:"netName,omitempty"`
 	NodePoolAntiAffinity bool   `json:"nodepoolAntiAffinity,omitempty" yaml:"nodepoolAntiAffinity,omitempty"`
 	NovaNetwork          bool   `json:"novaNetwork,omitempty" yaml:"novaNetwork,omitempty"`
-	PrivateKeyFile       bool   `json:"privateKeyFile,omitempty" yaml:"privateKeyFile,omitempty"`
+	PrivateKeyFile       string `json:"privateKeyFile,omitempty" yaml:"privateKeyFile,omitempty"`
 	Region               string `json:"region,omitempty" yaml:"region,omitempty"`
 	SecGroups            string `json:"secGroups,omitempty" yaml:"secGroups,omitempty"`
 	SSHPort              string `json:"sshPort,omitempty" yaml:"sshPort,omitempty"`
@@ -96,6 +96,7 @@ const (
 	NodeTemplateFieldStatus                   = "status"
 	NodeTemplateFieldTransitioning            = "transitioning"
 	NodeTemplateFieldTransitioningMessage     = "transitioningMessage"
+	NodeTemplateFieldUbiCloudConfig           = "ubicloudConfig"
 	NodeTemplateFieldUUID                     = "uuid"
 	NodeTemplateFieldUseInternalIPAddress     = "useInternalIpAddress"
 )
@@ -127,7 +128,7 @@ type NodeTemplate struct {
 	TransitioningMessage     string                               `json:"transitioningMessage,omitempty" yaml:"transitioningMessage,omitempty"`
 	UUID                     string                               `json:"uuid,omitempty" yaml:"uuid,omitempty"`
 	UseInternalIPAddress     bool                                 `json:"useInternalIpAddress,omitempty" yaml:"useInternalIpAddress,omitempty"`
-	UbiCloudConfig           *UbiCloudConfig                      `json:"ubicloudconfig" yaml:"ubicloudconfig"`
+	UbiCloudConfig           *UbiCloudConfig                      `json:"ubicloudConfig" yaml:"ubicloudConfig"`
 }
 
 type NodeTemplateCollection struct {

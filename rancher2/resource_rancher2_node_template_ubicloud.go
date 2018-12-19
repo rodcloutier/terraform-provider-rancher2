@@ -1,6 +1,7 @@
 package rancher2
 
 import (
+	"fmt"
 	"log"
 
 	"github.com/hashicorp/terraform/helper/schema"
@@ -33,42 +34,42 @@ func ubiCloudFields() map[string]*schema.Schema {
 			Default:  false,
 		},
 		"domain_id": &schema.Schema{
-			Type:          schema.TypeString,
-			ConflictsWith: []string{"domain_name"},
-			Optional:      true,
+			Type: schema.TypeString,
+			// ConflictsWith: []string{"domain_name"},
+			Optional: true,
 		},
 		"domain_name": &schema.Schema{
-			Type:          schema.TypeString,
-			ConflictsWith: []string{"domain_id"},
-			Optional:      true,
+			Type: schema.TypeString,
+			// ConflictsWith: []string{"domain_id"},
+			Optional: true,
 		},
 		"endpoint_type": &schema.Schema{
 			Type:     schema.TypeString,
 			Optional: true,
 		},
 		"flavor_id": &schema.Schema{
-			Type:          schema.TypeString,
-			ConflictsWith: []string{"flavor_name"},
-			Optional:      true,
+			Type: schema.TypeString,
+			// ConflictsWith: []string{"flavor_name"},
+			Optional: true,
 		},
 		"flavor_name": &schema.Schema{
-			Type:          schema.TypeString,
-			ConflictsWith: []string{"flavor_id"},
-			Optional:      true,
+			Type: schema.TypeString,
+			// ConflictsWith: []string{"flavor_id"},
+			Optional: true,
 		},
 		"floatingip_pool": &schema.Schema{
 			Type:     schema.TypeString,
 			Optional: true,
 		},
 		"image_id": &schema.Schema{
-			Type:          schema.TypeString,
-			ConflictsWith: []string{"image_name"},
-			Optional:      true,
+			Type: schema.TypeString,
+			// ConflictsWith: []string{"image_name"},
+			Optional: true,
 		},
 		"image_name": &schema.Schema{
-			Type:          schema.TypeString,
-			ConflictsWith: []string{"image_id"},
-			Optional:      true,
+			Type: schema.TypeString,
+			// ConflictsWith: []string{"image_id"},
+			Optional: true,
 		},
 		"insecure": &schema.Schema{
 			Type:     schema.TypeBool,
@@ -125,14 +126,14 @@ func ubiCloudFields() map[string]*schema.Schema {
 			Default:  "root",
 		},
 		"tenant_id": &schema.Schema{
-			Type:          schema.TypeString,
-			ConflictsWith: []string{"tenant_name"},
-			Optional:      true,
+			Type: schema.TypeString,
+			// ConflictsWith: []string{"tenant_name"},
+			Optional: true,
 		},
 		"tenant_name": &schema.Schema{
-			Type:          schema.TypeString,
-			ConflictsWith: []string{"tenant_id"},
-			Optional:      true,
+			Type: schema.TypeString,
+			// ConflictsWith: []string{"tenant_id"},
+			Optional: true,
 		},
 		"user_data_file": &schema.Schema{
 			Type:     schema.TypeString,
@@ -153,6 +154,10 @@ func nodeTemplateUbiCloudFields() map[string]*schema.Schema {
 			Type:     schema.TypeString,
 			Optional: true,
 		},
+		"driver": &schema.Schema{
+			Type:     schema.TypeString,
+			Computed: true,
+		},
 		// TODO default to proper HTTP_PROXY env vars
 		"engine_env": &schema.Schema{
 			Type:     schema.TypeMap,
@@ -161,11 +166,14 @@ func nodeTemplateUbiCloudFields() map[string]*schema.Schema {
 		"engine_insecure_registry": &schema.Schema{
 			Type:     schema.TypeList,
 			Optional: true,
+			Elem: &schema.Schema{
+				Type: schema.TypeString,
+			},
 		},
 		"engine_install_url": &schema.Schema{
 			Type:     schema.TypeString,
 			Required: true,
-			Default:  "https://releases.rancher.com/install-docker/17.03.sh",
+			// Default:  "https://releases.rancher.com/install-docker/17.03.sh",
 		},
 		"engine_label": &schema.Schema{
 			Type:     schema.TypeMap,
@@ -178,6 +186,9 @@ func nodeTemplateUbiCloudFields() map[string]*schema.Schema {
 		"engine_registry_mirror": &schema.Schema{
 			Type:     schema.TypeList,
 			Optional: true,
+			Elem: &schema.Schema{
+				Type: schema.TypeString,
+			},
 		},
 		"engine_storage_driver": &schema.Schema{
 			Type:     schema.TypeString,
@@ -245,8 +256,12 @@ func flattenNodeTemplateUbiCloud(d *schema.ResourceData, in *NodeTemplate) error
 
 	d.SetId(in.ID)
 
-	// TODO add description
-	err := d.Set("description", in.Description)
+	err := d.Set("driver", UbiCloudDriver)
+	if err != nil {
+		return err
+	}
+
+	err = d.Set("description", in.Description)
 	if err != nil {
 		return err
 	}
@@ -366,7 +381,7 @@ func expandUbiCloudConfig(c []interface{}) *UbiCloudConfig {
 	if v, ok := in["nova_network"].(bool); ok {
 		obj.NovaNetwork = v
 	}
-	if v, ok := in["private_key_file"].(bool); ok {
+	if v, ok := in["private_key_file"].(string); ok && len(v) > 0 {
 		obj.PrivateKeyFile = v
 	}
 	if v, ok := in["region"].(string); ok && len(v) > 0 {
@@ -435,6 +450,9 @@ func expandNodeTemplateUbiCloud(in *schema.ResourceData) *NodeTemplate {
 func resourceRancher2NodeTemplateUbiCloud() *schema.Resource {
 	return &schema.Resource{
 		Create: resourceRancher2NodeTemplateUbiCloudCreate,
+		Delete: resourceRancher2NodeTemplateUbiCloudDelete,
+		Read:   resourceRancher2NodeTemplateUbiCloudRead,
+		Update: resourceRancher2NodeTemplateUbiCloudUpdate,
 		Schema: nodeTemplateUbiCloudFields(),
 	}
 }
@@ -478,4 +496,104 @@ func resourceRancher2NodeTemplateUbiCloudRead(d *schema.ResourceData, meta inter
 	}
 
 	return flattenNodeTemplateUbiCloud(d, nodeTemplate)
+}
+
+func resourceRancher2NodeTemplateUbiCloudUpdate(d *schema.ResourceData, meta interface{}) error {
+	log.Printf("[INFO] Updating Node Template ID %s", d.Id())
+	client, err := meta.(*Config).ManagementClient()
+	if err != nil {
+		return err
+	}
+	nodeTemplateClient := NewNodeTemplateClient(client)
+
+	nodeTemplate, err := nodeTemplateClient.ByID(d.Id())
+	if err != nil {
+		return err
+	}
+
+	updateUbiCloudConfig := func(c []interface{}) map[string]interface{} {
+		config := make(map[string]interface{})
+		if len(c) == 0 || c[0] == nil {
+			return config
+		}
+		in := c[0].(map[string]interface{})
+
+		config[UbiCloudConfigActiveTimeout] = in["active_timeout"].(string)
+		config[UbiCloudConfigAuthURL] = in["auth_url"].(string)
+		config[UbiCloudConfigAvailabilityZone] = in["availability_zone"].(string)
+		config[UbiCloudConfigCaCert] = in["cacert"] = in.CaCert
+		config[UbiCloudConfigConfigDrive] = in["config_drive"] = in.ConfigDrive
+		config[UbiCloudConfigDomainID] = in["domain_id"] = in.DomainID
+		config[UbiCloudConfigDomainName] = in["domain_name"] = in.DomainName
+		config[UbiCloudConfigEndpointType] = in["endpoint_type"] = in.EndpointType
+		config[UbiCloudConfigFlavorID] = in["flavor_id"] = in.FlavorID
+		config[UbiCloudConfigFlavorName] = in["flavor_name"] = in.FlavorName
+		config[UbiCloudConfigFloatingIPPool] = in["floatingip_pool"] = in.FloatingIPPool
+		config[UbiCloudConfigImageID] = in["image_id"].(string)
+		config[UbiCloudConfigImageName] = in["image_name"] = in.ImageName
+		config[UbiCloudConfig] = in["insecure"] = in.Insecure
+		config[UbiCloudConfig] = in["ip_version"] = in.IPVersion
+		config[UbiCloudConfig] = in["keypair_name"] = in.KeypairName
+		config[UbiCloudConfig] = in["net_id"] = in.NetID
+		config[UbiCloudConfig] = in["net_name"] = in.NetName
+		config[UbiCloudConfig] = in["nodepool_anti_affinity"] = in.NodePoolAntiAffinity
+		config[UbiCloudConfig] = in["nova_network"] = in.NovaNetwork
+		config[UbiCloudConfig] = in["private_key_file"] = in.PrivateKeyFile
+		config[UbiCloudConfig] = in["region"] = in.Region
+		config[UbiCloudConfig] = in["sec_groups"] = in.SecGroups
+		config[UbiCloudConfig] = in["ssh_port"] = in.SSHPort
+		config[UbiCloudConfig] = in["ssh_user"] = in.SSHUser
+		config[UbiCloudConfig] = in["tenant_id"] = in.TenantID
+		config[UbiCloudConfig] = in["tenant_name"] = in.TenantName
+		config[UbiCloudConfig] = in["user_data_file"] = in.UserDataFile
+		config[UbiCloudConfig] = in["username"] = in.Username
+
+		return config
+	}
+
+	update := map[string]interface{}{
+		NodeTemplateFieldDescription:            d.Get("description").(string),
+		NodeTemplateFieldEngineEnv:              toMapString(d.Get("engine_env").(map[string]interface{})),
+		NodeTemplateFieldEngineInsecureRegistry: toArrayString(d.Get("engine_insecure_registry").([]interface{})),
+		NodeTemplateFieldEngineInstallURL:       d.Get("engine_install_url").(string),
+		NodeTemplateFieldEngineLabel:            toMapString(d.Get("engine_label").(map[string]interface{})),
+		NodeTemplateFieldEngineOpt:              toMapString(d.Get("engine_opt").(map[string]interface{})),
+		NodeTemplateFieldEngineRegistryMirror:   toArrayString(d.Get("engine_registry_mirror").([]interface{})),
+		NodeTemplateFieldEngineStorageDriver:    d.Get("engine_storage_driver").(string),
+		NodeTemplateFieldName:                   d.Get("name").(string),
+		NodeTemplateFieldUbiCloudConfig:         updateUbiCloudConfig(d.Get("ubicloud_config").([]interface{})),
+	}
+
+	_, err = nodeTemplateClient.Update(nodeTemplate, update)
+	if err != nil {
+		return err
+	}
+
+	return resourceRancher2NodeTemplateUbiCloudRead(d, meta)
+}
+
+func resourceRancher2NodeTemplateUbiCloudDelete(d *schema.ResourceData, meta interface{}) error {
+	log.Printf("[INFO] Deleting Node Template ID %s", d.Id())
+	client, err := meta.(*Config).ManagementClient()
+	if err != nil {
+		return err
+	}
+	nodeTemplateClient := NewNodeTemplateClient(client)
+
+	nodeTemplate, err := nodeTemplateClient.ByID(d.Id())
+	if err != nil {
+		if IsNotFound(err) {
+			log.Printf("[INFO] Node Template ID %s not found", d.Id())
+			d.SetId("")
+			return nil
+		}
+		return err
+	}
+
+	err = nodeTemplateClient.Delete(nodeTemplate)
+	if err != nil {
+		return fmt.Errorf("Error removing Node Template: %s", err)
+	}
+	d.SetId("")
+	return nil
 }
