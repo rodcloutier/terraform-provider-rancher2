@@ -1,0 +1,20 @@
+#!/bin/bash -e
+
+source $(dirname $0)/version
+
+cd $(dirname $0)/..
+
+ARCHIVE=terraform-provider-rancher2.${VERSION}.tgz
+
+tar -czvf bin/${ARCHIVE} bin/terraform-provider-rancher2
+
+if [ -z ${ARTIFACTORY_API_KEY+x} ]; then
+    echo ERROR: Missing expected environment variable ARTIFACTORY_API_KEY
+    exit 1
+fi
+
+echo "Pushing terraform Rancher2 provider to artifactory"
+curl --silent --show-error --fail --location \
+    --header "X-JFrog-Art-Api: ${ARTIFACTORY_API_KEY}" \
+    --request PUT "https://artifactory/generic/uks/terraform-provider-rancher/${ARCHIVE}" \
+    --upload-file bin/${ARCHIVE}
