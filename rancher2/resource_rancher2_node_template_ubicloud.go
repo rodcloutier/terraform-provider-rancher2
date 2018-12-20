@@ -103,6 +103,11 @@ func ubiCloudFields() map[string]*schema.Schema {
 			Optional: true,
 			Default:  false,
 		},
+		"password": &schema.Schema{
+			Type:      schema.TypeString,
+			Required:  true,
+			Sensitive: true,
+		},
 		"private_key_file": &schema.Schema{
 			Type:     schema.TypeString,
 			Optional: true,
@@ -235,6 +240,7 @@ func flattenUbiCloudConfig(in *UbiCloudConfig) []interface{} {
 	config["net_name"] = in.NetName
 	config["nodepool_anti_affinity"] = in.NodePoolAntiAffinity
 	config["nova_network"] = in.NovaNetwork
+	config["password"] = in.Password
 	config["private_key_file"] = in.PrivateKeyFile
 	config["region"] = in.Region
 	config["sec_groups"] = in.SecGroups
@@ -380,6 +386,9 @@ func expandUbiCloudConfig(c []interface{}) *UbiCloudConfig {
 	}
 	if v, ok := in["nova_network"].(bool); ok {
 		obj.NovaNetwork = v
+	}
+	if v, ok := in["password"].(string); ok && len(v) > 0 {
+		obj.Password = v
 	}
 	if v, ok := in["private_key_file"].(string); ok && len(v) > 0 {
 		obj.PrivateKeyFile = v
@@ -542,6 +551,7 @@ func resourceRancher2NodeTemplateUbiCloudUpdate(d *schema.ResourceData, meta int
 		config[UbiCloudConfigNetName] = in["net_name"].(string)
 		config[UbiCloudConfigNodePoolAntiAffinity] = in["nodepool_anti_affinity"].(bool)
 		config[UbiCloudConfigNovaNetwork] = in["nova_network"].(bool)
+		config[UbiCloudConfigPassword] = in["password"].(string)
 		config[UbiCloudConfigPrivateKeyFile] = in["private_key_file"].(string)
 		config[UbiCloudConfigRegion] = in["region"].(string)
 		config[UbiCloudConfigSecGroups] = in["sec_groups"].(string)

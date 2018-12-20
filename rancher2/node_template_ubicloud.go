@@ -28,6 +28,7 @@ const (
 	UbiCloudConfigNetName              = "netName"
 	UbiCloudConfigNodePoolAntiAffinity = "nodepoolAntiAffinity"
 	UbiCloudConfigNovaNetwork          = "novaNetwork"
+	UbiCloudConfigPassword             = "password"
 	UbiCloudConfigPrivateKeyFile       = "privateKeyFile"
 	UbiCloudConfigRegion               = "region"
 	UbiCloudConfigSecGroups            = "secGroups"
@@ -60,6 +61,7 @@ type UbiCloudConfig struct {
 	NetName              string `json:"netName,omitempty" yaml:"netName,omitempty"`
 	NodePoolAntiAffinity bool   `json:"nodepoolAntiAffinity,omitempty" yaml:"nodepoolAntiAffinity,omitempty"`
 	NovaNetwork          bool   `json:"novaNetwork,omitempty" yaml:"novaNetwork,omitempty"`
+	Password             string `json:"password,omitempty" yaml:"password,omitempty"`
 	PrivateKeyFile       string `json:"privateKeyFile,omitempty" yaml:"privateKeyFile,omitempty"`
 	Region               string `json:"region,omitempty" yaml:"region,omitempty"`
 	SecGroups            string `json:"secGroups,omitempty" yaml:"secGroups,omitempty"`

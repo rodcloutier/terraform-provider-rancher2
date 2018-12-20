@@ -48,6 +48,7 @@ resource "rancher2_node_template_ubicloud" "foo" {
 		net_name = "netname"
 		nodepool_anti_affinity = true
 		nova_network = false
+		password = "password"
 		private_key_file = "/tmp/my_key.pem"
 		region = "east"
 		sec_groups = "security-group"
@@ -99,6 +100,7 @@ resource "rancher2_node_template_ubicloud" "foo" {
 		net_name = "netname-updated"
 		nodepool_anti_affinity = false
 		nova_network = true
+		password = "password-updated"
 		private_key_file = "/tmp/my_key.pem-updated"
 		region = "east-updated"
 		sec_groups = "security-group-updated"
