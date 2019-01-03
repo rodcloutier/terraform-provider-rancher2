@@ -67,6 +67,8 @@ cd package
 TAG=${TAG:-${VERSION}${SUFFIX}}
 REPO=${REPO:-rancher}
 
+TAG=$(echo ${TAG} | sed 's/\+/_/g')
+
 if echo $TAG | grep -q dirty; then
     TAG=dev
 fi
