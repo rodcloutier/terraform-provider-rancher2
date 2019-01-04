@@ -6,7 +6,7 @@ cd $(dirname $0)/..
 
 ARCHIVE=terraform-provider-rancher2.${VERSION}.tgz
 
-tar -czvf bin/${ARCHIVE} bin/terraform-provider-rancher2
+tar -czvf bin/${ARCHIVE} --directory=bin terraform-provider-rancher2
 
 if [ -z ${ARTIFACTORY_API_KEY+x} ]; then
     echo ERROR: Missing expected environment variable ARTIFACTORY_API_KEY
